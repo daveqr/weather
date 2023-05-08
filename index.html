@@ -51,10 +51,25 @@
          */
         class Test {
             constructor() {
+                const params = new URLSearchParams(window.location.search);
+                const forceError = (params.get('forceError') === 'true');
+
                 // Originally testResuls was a collection of elements. We're assuming there will be only 1
                 // so just get the first element in the collection.
                 this.testResults = document.getElementsByClassName('test-results')[0];
-                this.weather = new Weather('Brentwood', 'TN');
+
+                // got a 401 with this key so generated my own
+                //this.key = '25e989bd41e3e24ce13173d8126e0fd6';
+                if (forceError) {
+                    this.key = 'bad-key'
+                } else {
+                    this.key = '7fd4a7b0a7c6fa40486c021965d65e33';
+                }
+
+                this.weather = new Weather(this.key);
+                this.weather.setCity('Brentwood');
+                this.weather.setState('TN');
+
                 this.formatter = new WeatherFormatter();
             }
 
@@ -63,7 +78,7 @@
 
                 // TODO: Make the API call and handle the results
                 try {
-                    await this.weather.fetchWeather();
+                    await this.weather.fetchWeather('TN');
                     this.setResults(this.weather);
                 } catch (error) {
                     this.setError(this.weather.error);
@@ -72,14 +87,14 @@
 
             setError(weather) {
                 // TODO: Format the error
-                let formattedMessage = this.formatter.formatError(weather)
+                const formattedMessage = this.formatter.formatError(weather)
                 this.testResults.innerHTML = (formattedMessage || '').toString();
             }
 
             setResults(weather) {
 
                 // TODO: Format the results
-                let formattedResults = this.formatter.format(weather)
+                const formattedResults = this.formatter.format(weather)
                 this.testResults.innerHTML = (formattedResults || '').toString();
             }
         }
@@ -113,23 +128,18 @@
 
 
         class Weather {
-            constructor(city, state, country = 'US') {
-                // got a 401 with this key so generated my own
-                //this.key = '25e989bd41e3e24ce13173d8126e0fd6';
-                this.key = '7fd4a7b0a7c6fa40486c021965d65e33';
-
-                // Can use this to force an error. Since this is not a full implementation,
-                // I'm just hard-coding it, but for a real app we might use a unit test to force an error.
-                // this.key = '7fd4a7b0a7c6fa40486c021965d65e33xxxx';
-
-                this.city = city;
-                this.state = state;
-                this.country = country;
+            constructor(key) {
+                this.key = key
                 this.results = null;
                 this.error = null;
+
+                this.city = null;
+                this.state = null;
+                this.country = 'US'
             }
 
             async fetchWeather() {
+                const keyToUse = this.shouldForceError ? this.badKey : this.key;
                 const url = `https://api.openweathermap.org/data/2.5/weather?q=${this.city},${this.state},${this.country}&units=imperial&appid=${this.key}`;
                 console.log(url)
 
@@ -150,6 +160,18 @@
 
             setError(message) {
                 this.error = message;
+            }
+
+            setCity(city) {
+                this.city = city;
+            }
+
+            setState(state) {
+                this.state = state;
+            }
+
+            setCountry(country) {
+                this.country = country;
             }
         }
     </script>
